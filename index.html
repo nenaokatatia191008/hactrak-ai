@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HACTRAK | AI Neural Assistant</title>
+    <style>
+        /* ==========================================
+           RESET & DASAR
+           ========================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            background: #0a0a0a;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* ==========================================
+           SCANLINE EFFECT (Efek garis CRT)
+           ========================================== */
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg,
+                    transparent 0px,
+                    transparent 2px,
+                    rgba(0, 255, 0, 0.02) 2px,
+                    rgba(0, 255, 0, 0.02) 4px);
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* ==========================================
+           ANIMASI
+           ========================================== */
+        @keyframes glitch {
+            0% {
+                text-shadow: 2px 0 #00ff00, -2px 0 #ff00ff;
+                transform: skew(0deg);
+            }
+            25% {
+                text-shadow: -2px 0 #00ff00, 2px 0 #ff00ff;
+                transform: skew(2deg);
+            }
+            50% {
+                text-shadow: 2px 2px #00ff00, -2px -2px #ff00ff;
+                transform: skew(-2deg);
+            }
+            75% {
+                text-shadow: -2px 2px #00ff00, 2px -2px #ff00ff;
+                transform: skew(1deg);
+            }
+            100% {
+                text-shadow: 2px 0 #00ff00, -2px 0 #ff00ff;
+                transform: skew(0deg);
+            }
+        }
+        @keyframes blink {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0;
+            }
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 0.6;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes dots {
+            0% {
+                content: '';
+            }
+            33% {
+                content: '.';
+            }
+            66% {
+                content: '..';
+            }
+            100% {
+                content: '...';
+            }
+        }
+        @keyframes blinkCursor {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* ==========================================
+           CONTAINER UTAMA
+           ========================================== */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ==========================================
+           NAVBAR (Header)
+           ========================================== */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            border: 1px solid #00ff0044;
+            background: rgba(10, 10, 10, 0.95);
+            margin-bottom: 40px;
+            position: sticky;
+            top: 15px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            border-radius: 4px;
+        }
+        .navbar .logo {
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 5px;
+            color: #00ff00;
+            text-shadow: 0 0 30px #00ff0066;
+        }
+        .navbar .logo span {
+            color: #ff00ff;
+            text-shadow: 0 0 30px #ff00ff66;
+        }
+        .navbar .logo .tagline {
+            font-size: 10px;
+            color: #00ff0044;
+            letter-spacing: 3px;
+            display: block;
+            margin-top: 2px;
+        }
+        .navbar .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 11px;
+            color: #00ff0066;
+            letter-spacing: 2px;
+        }
+        .navbar .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #00ff00;
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+
+        /* ==========================================
+           ASSISTANT WRAPPER (Kotak chat)
+           ========================================== */
+        .assistant-wrapper {
+            border: 1px solid #00ff0044;
+            background: radial-gradient(circle at center, rgba(0, 255, 0, 0.03) 0%, transparent 70%);
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 4px;
+        }
+        .assistant-wrapper::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(255, 0, 255, 0.02), transparent, rgba(255, 0, 255, 0.02), transparent);
+            animation: rotate-bg 30s linear infinite;
+        }
+        @keyframes rotate-bg {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ==========================================
+           HEADER (Logo + Title)
+           ========================================== */
+        .assistant-header {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #00ff0022;
+            margin-bottom: 30px;
+        }
+        .assistant-header .avatar {
+            font-size: 60px;
+            margin-bottom: 10px;
+            display: block;
+            animation: pulse 2s infinite;
+        }
+        .assistant-header h1 {
+            font-size: 50px;
+            font-weight: normal;
+            letter-spacing: 10px;
+            color: #00ff00;
+            text-shadow: 0 0 40px #00ff0044;
+            animation: glitch 4s infinite;
+        }
+        .assistant-header h1 span {
+            color: #ff00ff;
+            text-shadow: 0 0 40px #ff00ff44;
+        }
+        .assistant-header .subtitle {
+            color: #00ff0088;
+            font-size: 14px;
+            letter-spacing: 5px;
+            margin-top: 10px;
+        }
+        .assistant-header .badge {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 5px 20px;
+            border: 1px solid #00ff0044;
+            font-size: 11px;
+            color: #00ff0066;
+            letter-spacing: 3px;
+            border-radius: 2px;
+        }
+        .assistant-header .badge .highlight {
+            color: #ff00ff;
+        }
+
+        /* ==========================================
+           CHAT BOX
+           ========================================== */
+        .chat-container {
+            position: relative;
+            z-index: 2;
+        }
+        .chat-box {
+            min-height: 400px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 20px;
+            background: rgba(5, 5, 5, 0.8);
+            border: 1px solid #00ff0022;
+            margin-bottom: 20px;
+            scroll-behavior: smooth;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-box::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-box::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+        .chat-box::-webkit-scrollbar-thumb {
+            background: #00ff0044;
+            border-radius: 3px;
+        }
+        .chat-box::-webkit-scrollbar-thumb:hover {
+            background: #ff00ff66;
+        }
+
+        /* ==========================================
+           PESAN
+           ========================================== */
+        .message-wrapper {
+            width: 100%;
+            margin-bottom: 16px;
+            animation: fadeInUp 0.3s ease;
+        }
+        .message-wrapper.user {
+            display: flex;
+            justify-content: flex-end;
+        }
+        .message-wrapper.ai {
+            display: flex;
+            justify-content: flex-start;
+        }
+        .message-wrapper.system {
+            display: flex;
+            justify-content: center;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            word-wrap: break-word;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        /* User message */
+        .message-wrapper.user .message {
+            background: rgba(0, 255, 0, 0.08);
+            border: 1px solid #00ff0044;
+            color: #00ff00;
+            border-bottom-right-radius: 4px;
+        }
+        /* AI message */
+        .message-wrapper.ai .message {
+            background: rgba(0, 255, 0, 0.03);
+            border: 1px solid #00ff0033;
+            color: #00ff00;
+            border-bottom-left-radius: 4px;
+        }
+        /* System message */
+        .message-wrapper.system .message {
+            background: rgba(255, 255, 0, 0.05);
+            border: 1px solid #ffcc0044;
+            color: #ffcc0066;
+            font-style: italic;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .message .msg-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+            font-size: 11px;
+            opacity: 0.7;
+        }
+        .message .msg-icon {
+            font-size: 14px;
+        }
+        .message .msg-name {
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .message-wrapper.user .msg-name {
+            color: #00ff00;
+        }
+        .message-wrapper.ai .msg-name {
+            color: #00ff00;
+        }
+        .message .msg-time {
+            margin-left: auto;
+            font-size: 10px;
+            opacity: 0.5;
+        }
+        .message .msg-content {
+            margin-top: 2px;
+        }
+
+        /* Kursor berkedip untuk efek ngetik */
+        .typing-cursor {
+            display: inline-block;
+            width: 10px;
+            height: 18px;
+            background: #00ff00;
+            animation: blinkCursor 0.7s infinite;
+            vertical-align: text-bottom;
+            margin-left: 2px;
+        }
+
+        /* ==========================================
+           TYPING INDICATOR
+           ========================================== */
+        .typing-indicator {
+            display: none;
+            padding: 10px 16px;
+            color: #00ff0066;
+            font-size: 13px;
+            letter-spacing: 2px;
+            border-left: 2px solid #00ff0044;
+            margin-bottom: 16px;
+            align-self: flex-start;
+            animation: fadeInUp 0.3s ease;
+        }
+        .typing-indicator.show {
+            display: block;
+        }
+        .typing-indicator .dots::after {
+            content: '';
+            animation: dots 1.5s infinite;
+        }
+
+        /* ==========================================
+           INPUT AREA
+           ========================================== */
+        .chat-input-area {
+            display: flex;
+            gap: 0;
+            border: 1px solid #00ff0044;
+            background: rgba(5, 5, 5, 0.8);
+            transition: all 0.3s;
+            position: relative;
+            z-index: 2;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .chat-input-area:focus-within {
+            border-color: #ff00ff;
+            box-shadow: 0 0 30px #ff00ff22;
+        }
+        .chat-input-area input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 15px 20px;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 15px;
+            outline: none;
+        }
+        .chat-input-area input::placeholder {
+            color: #00ff0033;
+        }
+        .chat-input-area input:focus::placeholder {
+            color: #ff00ff33;
+        }
+        .chat-input-area button {
+            background: transparent;
+            border: none;
+            border-left: 1px solid #00ff0044;
+            color: #00ff00;
+            padding: 15px 30px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+        }
+        .chat-input-area button:hover {
+            background: #ff00ff;
+            color: #0a0a0a;
+            border-color: #ff00ff;
+        }
+        .chat-input-area button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        /* ==========================================
+           QUICK COMMANDS (Tombol cepat)
+           ========================================== */
+        .quick-commands {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            position: relative;
+            z-index: 2;
+        }
+        .quick-commands button {
+            background: transparent;
+            border: 1px solid #00ff0022;
+            color: #00ff0066;
+            padding: 6px 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 2px;
+        }
+        .quick-commands button:hover {
+            border-color: #ff00ff66;
+            color: #ff00ff;
+            background: rgba(255, 0, 255, 0.05);
+            box-shadow: 0 0 20px #ff00ff22;
+        }
+
+        /* ==========================================
+           FEATURES MINI
+           ========================================== */
+        .features-mini {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 25px;
+            position: relative;
+            z-index: 2;
+        }
+        .feature-mini-item {
+            text-align: center;
+            padding: 15px;
+            border: 1px solid #00ff0022;
+            background: rgba(5, 5, 5, 0.5);
+            transition: all 0.3s;
+            border-radius: 4px;
+        }
+        .feature-mini-item:hover {
+            border-color: #ff00ff44;
+            background: rgba(255, 0, 255, 0.03);
+        }
+        .feature-mini-item .icon {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .feature-mini-item .label {
+            font-size: 10px;
+            color: #00ff0066;
+            letter-spacing: 2px;
+        }
+        .feature-mini-item .value {
+            font-size: 14px;
+            color: #00ff00;
+            margin-top: 5px;
+            letter-spacing: 1px;
+        }
+
+        /* ==========================================
+           FOOTER
+           ========================================== */
+        .footer {
+            margin-top: 50px;
+            padding: 30px 20px;
+            border-top: 1px solid #00ff0044;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .footer .footer-text {
+            color: #00ff0033;
+            font-size: 11px;
+            letter-spacing: 2px;
+        }
+        .footer .footer-text .highlight {
+            color: #ff00ff44;
+        }
+        .footer .footer-links {
+            display: flex;
+            gap: 25px;
+        }
+        .footer .footer-links a {
+            color: #00ff0033;
+            text-decoration: none;
+            font-size: 11px;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+        }
+        .footer .footer-links a:hover {
+            color: #ff00ff;
+        }
+
+        /* ==========================================
+           RESPONSIVE (HP & Tablet)
+           ========================================== */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            .navbar .logo {
+                font-size: 20px;
+            }
+            .assistant-header h1 {
+                font-size: 32px;
+                letter-spacing: 6px;
+            }
+            .chat-box {
+                min-height: 300px;
+                max-height: 400px;
+                padding: 15px;
+            }
+            .chat-input-area {
+                flex-direction: column;
+            }
+            .chat-input-area input {
+                padding: 12px 15px;
+                font-size: 14px;
+            }
+            .chat-input-area button {
+                border-left: none;
+                border-top: 1px solid #00ff0044;
+                padding: 12px;
+            }
+            .quick-commands {
+                justify-content: center;
+            }
+            .features-mini {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .footer {
+                flex-direction: column;
+                text-align: center;
+            }
+            .message {
+                max-width: 90%;
+                font-size: 13px;
+            }
+        }
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+            .assistant-wrapper {
+                padding: 15px;
+            }
+            .assistant-header h1 {
+                font-size: 24px;
+                letter-spacing: 4px;
+            }
+            .assistant-header .avatar {
+                font-size: 40px;
+            }
+            .chat-box {
+                min-height: 250px;
+                max-height: 350px;
+                padding: 10px;
+            }
+            .message {
+                max-width: 95%;
+                font-size: 12px;
+                padding: 10px 12px;
+            }
+            .features-mini {
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+            .feature-mini-item {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ========================================== -->
+    <!-- SCANLINE OVERLAY                           -->
+    <!-- ========================================== -->
+    <div class="scanline"></div>
+
+    <!-- ========================================== -->
+    <!-- CONTAINER UTAMA                            -->
+    <!-- ========================================== -->
+    <div class="container">
+
+        <!-- ========================================== -->
+        <!-- NAVBAR                                     -->
+        <!-- ========================================== -->
+        <nav class="navbar">
+            <div class="logo">
+                HACTRAK<span>⚡</span>
+                <span class="tagline">// NEURAL TRACKER SYSTEM</span>
+            </div>
+            <div class="status-indicator">
+                <span class="status-dot"></span>
+                <span>SYSTEM ONLINE</span>
+                <span style="color: #00ff0033;">|</span>
+                <span style="color: #ff00ff66;">v3.0</span>
+                <span style="color: #00ff0033;">|</span>
+                <span style="color: #ff00ff66;" id="aiStatus">⚡ GROQ AI</span>
+            </div>
+        </nav>
+
+        <!-- ========================================== -->
+        <!-- ASSISTANT WRAPPER                          -->
+        <!-- ========================================== -->
+        <div class="assistant-wrapper">
+
+            <!-- ========== HEADER ========== -->
+            <div class="assistant-header">
+                <span class="avatar">⚡</span>
+                <h1>HACTRAK<span>AI</span></h1>
+                <div class="subtitle">⚡ NEURAL TRACKER & ASSISTANT INTERFACE ⚡</div>
+                <div class="badge">
+                    ● <span class="highlight">TRACKING</span>
+                    ● <span class="highlight">ENCRYPTED</span>
+                    ● <span class="highlight">READY</span>
+                </div>
+            </div>
+
+            <!-- ========== CHAT ========== -->
+            <div class="chat-container">
+
+                <!-- Chat Box -->
+                <div class="chat-box" id="chatBox"></div>
+
+                <!-- Typing Indicator -->
+                <div class="typing-indicator" id="typingIndicator">
+                    <span class="dots">HACTRAK is tracking your query</span>
+                </div>
+
+                <!-- Input Area -->
+                <div class="chat-input-area">
+                    <input type="text" id="chatInput" placeholder="> Track your query..." autofocus />
+                    <button id="sendBtn" onclick="sendMessage()">⚡ TRACK</button>
+                </div>
+
+                <!-- Quick Commands -->
+                <div class="quick-commands">
+                    <button onclick="quickCommand('Halo HACTRAK, siapa kamu?')">👋 Perkenalan</button>
+                    <button onclick="quickCommand('Apa itu HACTRAK AI?')">📖 Tentang</button>
+                    <button onclick="quickCommand('Buatkan puisi hacker')">📝 Puisi</button>
+                    <button onclick="quickCommand('Track sistem keamanan')">🔒 Security</button>
+                    <button onclick="quickCommand('Bantu saya belajar ethical hacking')">💻 Hacking</button>
+                    <button onclick="quickCommand('Motivasi untuk hari ini')">🔥 Motivasi</button>
+                </div>
+
+                <!-- Features Mini -->
+                <div class="features-mini">
+                    <div class="feature-mini-item">
+                        <span class="icon">🛡️</span>
+                        <div class="label">SECURITY</div>
+                        <div class="value">ENCRYPTED</div>
+                    </div>
+                    <div class="feature-mini-item">
+                        <span class="icon">⚡</span>
+                        <div class="label">RESPONSE</div>
+                        <div class="value" id="responseTime">&lt; 100ms</div>
+                    </div>
+                    <div class="feature-mini-item">
+                        <span class="icon">🎯</span>
+                        <div class="label">TRACKING</div>
+                        <div class="value" id="trackCount">0 tracked</div>
+                    </div>
+                    <div class="feature-mini-item">
+                        <span class="icon">🧠</span>
+                        <div class="label">NEURAL</div>
+                        <div class="value">v3.0</div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ========================================== -->
+        <!-- FOOTER                                     -->
+        <!-- ========================================== -->
+        <footer class="footer">
+            <div class="footer-text">⚡ HACTRAK <span class="highlight">AI</span> • Neural Tracker System</div>
+            <div class="footer-links">
+                <a href="#">TRACK</a>
+                <a href="#">SECURITY</a>
+                <a href="#">API</a>
+                <a href="#">DOCS</a>
+            </div>
+            <div class="footer-text">© 2026 HACTRAK.<span class="highlight">AI</span></div>
+        </footer>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SUPABASE (OPSIONAL) - untuk simpan riwayat chat -->
+    <!-- Kosongkan CONFIG di bawah jika tidak pakai Supabase -->
+    <!-- ========================================== -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+    <!-- ========================================== -->
+    <!-- JAVASCRIPT                                 -->
+    <!-- ========================================== -->
+    <script>
+        // ==========================================
+        // 0. KONFIGURASI SUPABASE (OPSIONAL)
+        // Isi SUPABASE_URL dan SUPABASE_ANON_KEY jika ingin
+        // menyimpan riwayat chat & jumlah tracking secara permanen.
+        // Kosongkan (biarkan '') jika tidak ingin pakai Supabase -
+        // aplikasi tetap jalan normal tanpa penyimpanan permanen.
+        // ==========================================
+        const CONFIG = {
+            SUPABASE_URL: '',      // contoh: https://xxxxx.supabase.co
+            SUPABASE_ANON_KEY: ''  // anon/public key dari Supabase (aman untuk frontend jika RLS aktif)
+        };
+
+        let supabaseClient = null;
+        if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && window.supabase) {
+            supabaseClient = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+        }
+
+        async function saveMessageToSupabase(type, content) {
+            if (!supabaseClient) return;
+            try {
+                await supabaseClient.from('hactrak_messages').insert([{ type, content }]);
+            } catch (err) {
+                console.error('Supabase insert error:', err);
+            }
+        }
+
+        async function loadTrackCountFromSupabase() {
+            if (!supabaseClient) return;
+            try {
+                const { count, error } = await supabaseClient
+                    .from('hactrak_messages')
+                    .select('*', { count: 'exact', head: true })
+                    .in('type', ['user', 'ai']);
+                if (!error && typeof count === 'number') {
+                    messageCount = count;
+                    trackCount.textContent = messageCount + ' tracked';
+                }
+            } catch (err) {
+                console.error('Supabase count error:', err);
+            }
+        }
+
+        // ==========================================
+        // 1. DATA CHAT - Tempat semua pesan
+        // ==========================================
+        const messages = [];
+        let isProcessing = false;
+        let messageCount = 0;
+
+        // ==========================================
+        // 2. REFERENSI ELEMEN HTML
+        // ==========================================
+        const chatBox = document.getElementById('chatBox');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const trackCount = document.getElementById('trackCount');
+
+        // ==========================================
+        // 3. RENDER CHAT - Tampilkan semua pesan
+        // ==========================================
+        function renderChat() {
+            chatBox.innerHTML = '';
+
+            for (const msg of messages) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'message-wrapper ' + msg.type;
+
+                const time = msg.time || new Date().toLocaleTimeString('id-ID', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+
+                let icon, name;
+                if (msg.type === 'user') {
+                    icon = '👤';
+                    name = 'USER';
+                } else if (msg.type === 'ai') {
+                    icon = '⚡';
+                    name = 'HACTRAK.AI';
+                } else {
+                    icon = '🔒';
+                    name = 'SYSTEM';
+                }
+
+                const formattedContent = msg.content.replace(/\n/g, '<br>');
+
+                wrapper.innerHTML =
+                    '<div class="message ' + msg.type + '">' +
+                    '<div class="msg-header">' +
+                    '<span class="msg-icon">' + icon + '</span>' +
+                    '<span class="msg-name">' + name + '</span>' +
+                    '<span class="msg-time">' + time + '</span>' +
+                    '</div>' +
+                    '<div class="msg-content">' + formattedContent + '</div>' +
+                    '</div>';
+
+                chatBox.appendChild(wrapper);
+            }
+
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // ==========================================
+        // 4. TAMBAH PESAN
+        // ==========================================
+        function addMessage(type, content, skipSave) {
+            const time = new Date().toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+
+            messages.push({ type, content, time });
+            renderChat();
+
+            if (type === 'user' || type === 'ai') {
+                messageCount++;
+                trackCount.textContent = messageCount + ' tracked';
+                if (!skipSave) saveMessageToSupabase(type, content);
+            }
+        }
+
+        // ==========================================
+        // 5. AI EFEK KETIK PER HURUF
+        // ==========================================
+        function typeAIMessage(content) {
+            const time = new Date().toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+
+            const msgIndex = messages.length;
+            messages.push({ type: 'ai', content: '', time: time });
+            renderChat();
+
+            const allWrappers = chatBox.querySelectorAll('.message-wrapper.ai');
+            const lastWrapper = allWrappers[allWrappers.length - 1];
+            const contentDiv = lastWrapper?.querySelector('.msg-content');
+
+            if (!contentDiv) return;
+
+            let index = 0;
+            const speed = 15 + Math.random() * 20;
+
+            function typeCharacter() {
+                if (index < content.length) {
+                    if (content[index] === '\n') {
+                        contentDiv.innerHTML += '<br>';
+                    } else {
+                        contentDiv.innerHTML += content[index];
+                    }
+                    index++;
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                    setTimeout(typeCharacter, speed);
+                } else {
+                    messages[msgIndex].content = content;
+                    contentDiv.innerHTML += '<span class="typing-cursor"></span>';
+                    messageCount++;
+                    trackCount.textContent = messageCount + ' tracked';
+                    saveMessageToSupabase('ai', content);
+                    setTimeout(function() {
+                        const cursor = contentDiv.querySelector('.typing-cursor');
+                        if (cursor) cursor.remove();
+                    }, 1000);
+                }
+            }
+
+            typeCharacter();
+        }
+
+        // ==========================================
+        // 6. TYPING INDICATOR
+        // ==========================================
+        function showTyping() {
+            typingIndicator.classList.add('show');
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function hideTyping() {
+            typingIndicator.classList.remove('show');
+        }
+
+        // ==========================================
+        // 7. FALLBACK RESPONSE LOKAL
+        // ==========================================
+        function getLocalResponse(input) {
+            const lower = input.toLowerCase();
+
+            const responses = {
+                'halo': '🚀 Halo! Saya HACTRAK AI - Neural Tracker System. Ada yang bisa saya bantu hari ini?',
+                'hai': '🚀 Hai! Saya HACTRAK AI siap membantu Anda!',
+                'apa kabar': '😊 Saya baik! Selalu siap membantu Anda. Kabar Anda gimana?',
+                'siapa': '⚡ Saya HACTRAK AI - Neural Tracker & Assistant System. Saya siap membantu Anda! 🛡️',
+                'tentang': '🔍 HACTRAK AI adalah Neural Tracker & Assistant System untuk tracking data, analisis keamanan, dan kebutuhan digital! ⚡',
+                'puisi': '💻 *Puisi Hacker*\n\nDalam gelap layar menyala\nKode menari tanpa lelah\nHACTRAK melacak setiap data\nKeamanan jadi prioritas! 🛡️✨',
+                'track': '🎯 HACTRAK siap melacak! Ada yang ingin saya tracking?',
+                'hack': '💻 HACTRAK siap bantu belajar ethical hacking! Mulai dari dasar dulu ya! 🛡️',
+                'coding': '💻 HACTRAK Coding Assistant! Rekomendasi: HTML, CSS, JS, Python. Mulai dari yang sederhana! 🔥',
+                'motivasi': '🔥 "Keamanan dimulai dari kesadaran." Teruslah belajar dan berkontribusi! 💪'
+            };
+
+            for (const [key, value] of Object.entries(responses)) {
+                if (lower.includes(key)) {
+                    return value;
+                }
+            }
+
+            const fallbacks = [
+                '🔍 HACTRAK AI mendengar Anda! Ada yang bisa saya bantu? 🚀',
+                '🎯 Menarik! HACTRAK AI siap membantu. Ceritakan lebih detail! ⚡',
+                '🛡️ HACTRAK siap! Bisa tolong diperjelas agar saya bisa membantu lebih tepat? 💪',
+                '⚡ HACTRAK AI di sini! Mulai dari mana kita bahas? 😊'
+            ];
+
+            return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+        }
+
+        // ==========================================
+        // 8. PANGGIL API GROQ (via Cloudflare Pages Function)
+        // ==========================================
+        async function getGroqResponse(userMessage) {
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: messages.concat([{ type: 'user', content: userMessage }])
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    console.error('API Error:', data.error);
+                    return getLocalResponse(userMessage);
+                }
+
+                if (data.reply) {
+                    return data.reply;
+                }
+
+                return 'Maaf, tidak ada respons dari server.';
+
+            } catch (error) {
+                console.error('Network Error:', error);
+                return getLocalResponse(userMessage);
+            }
+        }
+
+        // ==========================================
+        // 9. KIRIM PESAN
+        // ==========================================
+        async function sendMessage() {
+            if (isProcessing) return;
+
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            // Tampilkan pesan user
+            addMessage('user', text);
+            chatInput.value = '';
+            chatInput.focus();
+
+            isProcessing = true;
+            sendBtn.disabled = true;
+            showTyping();
+
+            try {
+                const response = await getGroqResponse(text);
+                hideTyping();
+                typeAIMessage(response);
+            } catch (error) {
+                hideTyping();
+                addMessage('system', '❌ Error: ' + error.message, true);
+            }
+
+            isProcessing = false;
+            sendBtn.disabled = false;
+        }
+
+        // ==========================================
+        // 10. QUICK COMMAND
+        // ==========================================
+        function quickCommand(text) {
+            chatInput.value = text;
+            sendMessage();
+        }
+
+        // ==========================================
+        // 11. ENTER KEY
+        // ==========================================
+        chatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // ==========================================
+        // 12. RESPONSE TIME (Simulasi)
+        // ==========================================
+        function updateResponseTime() {
+            const time = Math.floor(50 + Math.random() * 80);
+            document.getElementById('responseTime').textContent = '< ' + time + 'ms';
+        }
+        setInterval(updateResponseTime, 3000);
+
+        // ==========================================
+        // 13. INIT - Jalankan saat halaman load
+        // ==========================================
+        async function init() {
+            // Pesan sambutan (tidak disimpan ke Supabase supaya tidak dobel tiap reload)
+            addMessage('ai', '⚡ HACTRAK AI siap! Silakan tanyakan apa saja - tracking, security, coding, atau ngobrol santai. Saya siap membantu! 🛡️', true);
+            addMessage('system', '🔒 System encrypted • Neural tracking active • v3.0');
+
+            await loadTrackCountFromSupabase();
+
+            // Fokus ke input
+            setTimeout(function() {
+                chatInput.focus();
+            }, 500);
+
+            console.log('%c⚡ HACTRAK AI v3.0', 'font-size:24px; color:#00ff00; font-weight:bold;');
+            console.log('%c🛡️ Neural Tracker System Loaded', 'font-size:14px; color:#00ff0066;');
+        }
+
+        // ==========================================
+        // 14. JALANKAN!
+        // ==========================================
+        init();
+    </script>
+
+</body>
+</html>
